@@ -1,0 +1,10 @@
+google-api-python-client==1.6.2
+httplib2==0.10.3
+lxml==3.8.0
+oauth2client==4.1.2
+opml==0.5
+pyasn1==0.3.1
+pyasn1-modules==0.0.10
+rsa==3.4.2
+six==1.10.0
+uritemplate==3.0.0
