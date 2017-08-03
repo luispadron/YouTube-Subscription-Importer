@@ -53,6 +53,9 @@ https://developers.google.com/api-client-library/python/guide/aaa_client_secrets
 # UCfQDD-pbllOCXHYwiXxjJxA
 START_OF_CHANNEL_ID = 52
 
+# The name of the file used to store the already subscribed to chanell ids
+STORED_CHANNEL_FILE_NAME = 'channels_subscribed.txt'
+
 def get_authenticated_service(args):
   flow = flow_from_clientsecrets(CLIENT_SECRETS_FILE,
     scope=YOUTUBE_READ_WRITE_SCOPE,
@@ -68,6 +71,30 @@ def get_authenticated_service(args):
     http=credentials.authorize(httplib2.Http()))
 
 
+def get_channels_list():
+  stored_file_txt = ''
+  if os.path.exists(STORED_CHANNEL_FILE_NAME):
+    with open(STORED_CHANNEL_FILE_NAME, mode='r', encoding='utf-8') as ids_file:
+      stored_file_txt = ids_file.read()
+
+  
+
+  # Parse the channel id's from the xml file
+  xmldoc = ET.parse(args.xml)
+  start = xmldoc.getroot()[0][0]
+
+  channel_ids = []
+  for child in start:
+    channel_id = child.get('xmlUrl')[START_OF_CHANNEL_ID:]
+    if channel_id not in stored_file_txt:
+      channel_ids.append(channel_id)
+    else:
+      print('Skipping channel: ' + channel_id)
+      
+
+  return channel_ids
+
+
 # This method calls the API's youtube.subscriptions.insert method to add a
 # subscription to the specified channel.
 def add_subscription(youtube, channel_id):
@@ -81,6 +108,18 @@ def add_subscription(youtube, channel_id):
       )
     )).execute()
 
+    # When a subscription is added, add the channel id into a file
+    # this file will be used to not subscribe to the same channel again
+  with open(STORED_CHANNEL_FILE_NAME, mode='a+', encoding='utf-8') as ids_file:
+    # Write info message for file if not already written
+    if os.path.getsize(STORED_CHANNEL_FILE_NAME) == 0:
+      ids_file.write(
+        'This file is used to keep track of channels that have already been subscribed.' +
+        '\nIf you would like to restart fresh or on a new account. Delete this file.\n\n'
+        )
+    # Write channel id to file
+    ids_file.write('%s\n' % channel_id)
+
   return add_subscription_response["snippet"]["title"]
 
 if __name__ == "__main__":
@@ -90,15 +129,7 @@ if __name__ == "__main__":
 
   youtube = get_authenticated_service(args)
 
-  # Parse the channel id's from the xml file
-  xmldoc = ET.parse(args.xml)
-  start = xmldoc.getroot()[0][0]
-
-  channel_ids = []
-  for child in start:
-    channel_ids.append(child.get('xmlUrl')[START_OF_CHANNEL_ID:])
-  
-  add_subscription(youtube, 'test')
+  channel_ids = get_channels_list()
 
   # We have all channel ids, lets subscribe now
   for channel_id in channel_ids:
@@ -106,5 +137,6 @@ if __name__ == "__main__":
       channel_title = add_subscription(youtube, channel_id)
     except HttpError as e:
       print("An HTTP error %d occurred:\n%s" % (e.resp.status, e.content))
+      raise
     else:
       print("A subscription to '%s' was added." % channel_title)    

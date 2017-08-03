@@ -3,3 +3,4 @@ subscriptions.xml
 client_secrets.json
 subscribe.py-oauth2.json
 env
+channels_subscribed.txt
