@@ -146,3 +146,5 @@ if __name__ == "__main__":
         exit(1)
     else:
       print("A subscription to '%s' was added." % channel_title)    
+
+  print("Finished subscribing to all channels!")
